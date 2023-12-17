@@ -1,6 +1,7 @@
 ### Log Pipeline using vector, kafka, clickhouse
 TODO: add desciription of how things work
 
+> NOTE: this is a very simple example, the main work would be around parsing the logs properly as needed and to decide on a good schema, most of this architecture is inspired from this zerodha blog: https://zerodha.tech/blog/logging-at-zerodha/
 #### Steps to run
 1. `docker compose up -d`, this will start the followin containers
     - kafka (we will send logs via kafka instead of directly to clickhouse)
