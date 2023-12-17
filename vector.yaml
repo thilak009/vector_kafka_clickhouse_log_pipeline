@@ -1,0 +1,59 @@
+sources:
+  docker_source:
+    type: docker_logs
+    include_containers:
+      - vector-nginx
+
+  kafka_source:
+    type: kafka
+    bootstrap_servers: kafka:9092
+    group_id: vector
+    topics:
+      - docker_logs
+
+
+transforms:
+  remap_docker_logs:
+    inputs:
+      - kafka_source
+    type: remap
+    source: |
+            # Prepare the full event payload.
+            docker_log = parse_json!(.message)
+            . = {
+              "container_created_at": docker_log.container_created_at, 
+              "container_id": docker_log.container_id, 
+              "container_name": docker_log.container_name,
+              "host": docker_log.host, 
+              "image": docker_log.image, 
+              "label": docker_log.label, 
+              "message": docker_log.message, 
+              "source_type": docker_log.source_type, 
+              "stream": docker_log.stream, 
+              "timestamp": docker_log.timestamp
+            }  
+
+sinks:
+  kafka_sink:
+    type: kafka
+    inputs:
+      - docker_source
+    bootstrap_servers: kafka:9092
+    topic: docker_logs
+    encoding:
+      codec: json
+
+  clickhouse_sink:
+    type: clickhouse
+    inputs:
+      - remap_docker_logs
+    database: logs
+    endpoint: http://clickhouse:8123
+    table: docker_logs
+    auth:
+      user: admin
+      password: admin
+      strategy: basic
+    date_time_best_effort: true
+    encoding:
+        timestamp_format: rfc3339
